@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚂 Train Management System</h1>
+            <p>Find and manage train schedules with ease</p>
+            <!-- Add Train Tab -->
+        <div id="add-train" class="tab-content">
+            <div class="search-form">
+                <h3 style="margin-bottom: 20px; font-size: 1.5rem;">➕ Add New Train</h3>
+                <div class="form-group">
+                    <div class="input-group">
+                        <label for="newTrainName">Train Name</label>
+                        <input type="text" id="newTrainName" placeholder="e.g., Satara Express">
+                    </div>
+                    <div class="input-group">
+                        <label for="newTrainNumber">Train Number</label>
+                        <input type="text" id="newTrainNumber" placeholder="e.g., 155250">
+                    </div>
+                    <button class="search-btn" onclick="addTrain()">🚂 Add Train</button>
+                </div>
+            </div>
+            <div id="add-train-message"></div>
+        </div>
+    </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('all-trains')">All Trains</button>
+            <button class="nav-tab" onclick="switchTab('search-trains')">Search Trains</button>
+            <button class="nav-tab" onclick="switchTab('add-train')">Add Train</button>
+        </div>
+
+        <!-- All Trains Tab -->
+        <div id="all-trains" class="tab-content active">
+            <button class="refresh-btn" onclick="loadAllTrains()">🔄 Refresh Trains</button>
+            <div id="all-trains-container"></div>
+        </div>
+
+        <!-- Search Trains Tab -->
+        <div id="search-trains" class="tab-content">
+            <div class="search-form">
+                <h3 style="margin-bottom: 20px; font-size: 1.5rem;">🔍 Search Trains</h3>
+                <div class="form-group">
+                    <div class="input-group">
+                        <label for="sourceCode">From Station Code</label>
+                        <input type="text" id="sourceCode" placeholder="e.g., NDLS" value="NDLS">
+                    </div>
+                    <div class="input-group">
+                        <label for="destinationCode">To Station Code</label>
+                        <input type="text" id="destinationCode" placeholder="e.g., CST" value="CST">
+                    </div>
+                    <button class="search-btn" onclick="searchTrains()">🚀 Search Trains</button>
+                </div>
+            </div>
+            <div id="search-results-container"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
