@@ -1,438 +1,295 @@
-// Configuration
 const API_BASE_URL = 'http://localhost:8086';
 
-// Available station names for better UI
-const stationNames = {
-    'NDLS': 'New Delhi',
-    'CST': 'Mumbai CST',
-    'BOM': 'Mumbai Central',
-    'DEL': 'Delhi',
-    'KOL': 'Kolkata',
-    'MAA': 'Chennai Central',
-    'HYB': 'Hyderabad',
-    'BLR': 'Bangalore',
-    'PUNE': 'Pune',
-    'AGR': 'Agra',
-    'LKO': 'Lucknow',
-    'JP': 'Jaipur',
-    'ADI': 'Ahmedabad',
-    'SBC': 'Bangalore City',
-    'MAS': 'Chennai Central',
-    'HWH': 'Howrah',
-    'CSMT': 'Mumbai CSMT',
-    'BCT': 'Mumbai Central',
-    'GZB': 'Ghaziabad',
-    'AMR': 'Amritsar'
-};
+ function showTab(tabName) {
 
-// Common train types for reference
-const trainTypes = [
-    'Rajdhani Express',
-    'Duranto Express',
-    'Shatabdi Express',
-    'Kalyan Express'
-];
+     const tabContents = document.querySelectorAll('.tab-content');
+     tabContents.forEach(content => content.classList.remove('active'));
+     
+     const tabs = document.querySelectorAll('.tab');
+     tabs.forEach(tab => tab.classList.remove('active'));
+     
+     document.getElementById(tabName).classList.add('active');
+     event.target.classList.add('active');
+ }
 
-/**
- * Switch between tabs
- * @param {string} tabName - Name of the tab to switch to
- */
-function switchTab(tabName) {
-    // Remove active class from all tabs and contents
-    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
-    // Add active class to clicked tab and corresponding content
-    event.target.classList.add('active');
-    document.getElementById(tabName).classList.add('active');
-    
-    // Load data if needed
-    if (tabName === 'all-trains') {
-        loadAllTrains();
-    }
-}
+ async function searchTrains() {
+     const searchType = document.getElementById('searchType').value;
+     const source = document.getElementById('source').value.trim();
+     const destination = document.getElementById('destination').value.trim();
+     const resultsDiv = document.getElementById('searchResults');
 
-/**
- * Show loading spinner
- * @param {string} containerId - ID of the container to show loading in
- */
-function showLoading(containerId) {
-    document.getElementById(containerId).innerHTML = '<div class="loading">Loading trains...</div>';
-}
+     if (!source || !destination) {
+         resultsDiv.innerHTML = '<div class="error">Please enter both source and destination.</div>';
+         return;
+     }
 
-/**
- * Show error message
- * @param {string} containerId - ID of the container to show error in
- * @param {string} message - Error message to display
- */
-function showError(containerId, message) {
-    document.getElementById(containerId).innerHTML = `<div class="error">❌ ${message}</div>`;
-}
+     resultsDiv.innerHTML = '<div class="loading">Searching for trains...</div>';
 
-/**
- * Show success message
- * @param {string} containerId - ID of the container to show success in
- * @param {string} message - Success message to display
- */
-function showSuccess(containerId, message) {
-    document.getElementById(containerId).innerHTML = `
-        <div class="success">✅ ${message}</div>
-    `;
-    
-    // Auto hide success message after 3 seconds
-    setTimeout(() => {
-        const successElement = document.getElementById(containerId).querySelector('.success');
-        if (successElement) {
-            successElement.remove();
-        }
-    }, 3000);
-}
+     try {
+         let url;
+         if (searchType === 'code') {
+             url = `${API_BASE_URL}/search/by-code?sourceCode=${encodeURIComponent(source)}&destinationCode=${encodeURIComponent(destination)}`;
+         } else {
+             url = `${API_BASE_URL}/search/by-name?sourceName=${encodeURIComponent(source)}&destinationName=${encodeURIComponent(destination)}`;
+         }
 
-/**
- * Get readable station name from code
- * @param {string} code - Station code
- * @returns {string} - Readable station name or code if not found
- */
-function getStationName(code) {
-    return stationNames[code] || code;
-}
+         const response = await fetch(url);
+         
+         if (!response.ok) {
+             throw new Error(`HTTP error! status: ${response.status}`);
+         }
+         
+         const trains = await response.json();
+         console.log('Search results:', trains); // Debug log
+         displaySearchResults(trains);
+         
+     } catch (error) {
+         console.error('Search error:', error);
+         resultsDiv.innerHTML = `<div class="error">Error searching trains: ${error.message}</div>`;
+     }
+ }
 
-/**
- * Create HTML for a train card (updated for new API structure)
- * @param {Object} train - Train object from API
- * @returns {string} - HTML string for train card
- */
-function createTrainCard(train) {
-    return `
-        <div class="train-card">
-            <div class="train-header">
-                <div class="train-number">${train.trainNumber || 'N/A'}</div>
-                <div class="train-id">ID: ${train.id || 'N/A'}</div>
-            </div>
-            <div class="train-name">${train.trainName || 'Unknown Train'}</div>
-            <div class="train-info">
-                <div class="info-item">
-                    <span class="label">Train Number:</span>
-                    <span class="value">${train.trainNumber}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Train Name:</span>
-                    <span class="value">${train.trainName}</span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Train ID:</span>
-                    <span class="value">${train.id}</span>
-                </div>
-            </div>
-        </div>
-    `;
-}
+ // Display search results
+ function displaySearchResults(trains) {
+     const resultsDiv = document.getElementById('searchResults');
+     
+     if (trains.length === 0) {
+         resultsDiv.innerHTML = '<div class="error">No trains found for the selected route.</div>';
+         return;
+     }
 
-/**
- * Create HTML for search result train card
- * @param {Object} train - Train object from search API
- * @returns {string} - HTML string for train card
- */
-function createSearchTrainCard(train) {
-    return `
-        <div class="train-card">
-            <div class="train-header">
-                <div class="train-number">${train.trainNumber || 'N/A'}</div>
-            </div>
-            <div class="train-name">${train.trainName || 'Unknown Train'}</div>
-            <div class="train-route">
-                <div class="station">
-                    <div class="station-code">${train.sourceCode || 'N/A'}</div>
-                    <div class="station-name">${getStationName(train.sourceCode)}</div>
-                </div>
-                <div class="route-line"></div>
-                <div class="station">
-                    <div class="station-code">${train.destinationCode || 'N/A'}</div>
-                    <div class="station-name">${getStationName(train.destinationCode)}</div>
-                </div>
-            </div>
-            <div class="train-timing">
-                <span>Departure: ${train.departureTime || 'N/A'}</span>
-                <span>Arrival: ${train.arrivalTime || 'N/A'}</span>
-            </div>
-        </div>
-    `;
-}
+     let html = '<h3 style="margin-bottom: 20px; color: #333;">Available Trains</h3>';
+     
+     trains.forEach(schedule => {
+         // Handle potential null/undefined values safely
+         const trainName = schedule.train?.trainName || 'Unknown Train';
+         const trainNumber = schedule.train?.trainNumber || 'N/A';
+         const sourceStationName = schedule.sourceStation?.stationName || 'Unknown Station';
+         const destinationStationName = schedule.destinationStation?.stationName || 'Unknown Station';
+         const departureTime = schedule.departureTime || 'N/A';
+         const arrivalTime = schedule.arrivalTime || 'N/A';
+         
+         html += `
+             <div class="train-card">
+                 <div class="train-header">
+                     <div class="train-name">${trainName}</div>
+                     <div class="train-number">#${trainNumber}</div>
+                 </div>
+                 <div class="route-info">
+                     <div class="station-info">
+                         <div class="station-name">${sourceStationName}</div>
+                         <div class="station-time">Departure: ${departureTime}</div>
+                     </div>
+                     <div class="route-arrow">→</div>
+                     <div class="station-info">
+                         <div class="station-name">${destinationStationName}</div>
+                         <div class="station-time">Arrival: ${arrivalTime}</div>
+                     </div>
+                 </div>
+             </div>
+         `;
+     });
 
-/**
- * Load all trains from the API
- */
-async function loadAllTrains() {
-    const container = document.getElementById('all-trains-container');
-    showLoading('all-trains-container');
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/trains`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const trains = await response.json();
-        
-        if (!Array.isArray(trains) || trains.length === 0) {
-            container.innerHTML = '<div class="no-results">No trains found in the database</div>';
-            return;
-        }
-        
-        const trainsHTML = trains.map(train => createTrainCard(train)).join('');
-        container.innerHTML = `
-            <h3 style="margin-bottom: 20px; color: #333;">Found ${trains.length} trains</h3>
-            <div class="trains-grid">${trainsHTML}</div>
-        `;
-        
-    } catch (error) {
-        console.error('Error loading trains:', error);
-        showError('all-trains-container', 
-            'Failed to load trains. Please check if your Spring Boot server is running on http://localhost:8086');
-    }
-}
+     resultsDiv.innerHTML = html;
+ }
 
-/**
- * Add a new train to the database
- */
-async function addTrain() {
-    const trainName = document.getElementById('newTrainName').value.trim();
-    const trainNumber = document.getElementById('newTrainNumber').value.trim();
-    const messageContainer = document.getElementById('add-train-message');
-    
-    // Clear previous messages
-    messageContainer.innerHTML = '';
-    
-    // Validation
-    if (!trainName || !trainNumber) {
-        showError('add-train-message', 'Please enter both train name and train number');
-        return;
-    }
-    
-    // Validate train number format (should be numeric)
-    if (!/^\d+$/.test(trainNumber)) {
-        showError('add-train-message', 'Train number should contain only digits');
-        return;
-    }
-    
-    const trainData = {
-        trainName: trainName,
-        trainNumber: trainNumber
-    };
-    
-    try {
-        showLoading('add-train-message');
-        
-        const response = await fetch(`${API_BASE_URL}/trains/addtrain`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(trainData)
-        });
-        
-        if (!response.ok) {
-            if (response.status === 409) {
-                throw new Error('Train number already exists');
-            } else if (response.status === 400) {
-                throw new Error('Invalid train data provided');
-            } else {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-        }
-        
-        const result = await response.json();
-        
-        showSuccess('add-train-message', `Train "${trainName}" added successfully!`);
-        
-        // Clear form
-        document.getElementById('newTrainName').value = '';
-        document.getElementById('newTrainNumber').value = '';
-        
-        // Refresh the all trains list if it's currently displayed
-        const allTrainsTab = document.getElementById('all-trains');
-        if (allTrainsTab.classList.contains('active')) {
-            loadAllTrains();
-        }
-        
-    } catch (error) {
-        console.error('Error adding train:', error);
-        showError('add-train-message', error.message);
-    }
-}
+ // Get all trains function
+ async function getAllTrains() {
+     const resultsDiv = document.getElementById('trainResults');
+     resultsDiv.innerHTML = '<div class="loading">Loading all trains...</div>';
 
-/**
- * Search trains by source and destination codes
- */
-async function searchTrains() {
-    const sourceCode = document.getElementById('sourceCode').value.trim().toUpperCase();
-    const destinationCode = document.getElementById('destinationCode').value.trim().toUpperCase();
-    const container = document.getElementById('search-results-container');
-    
-    // Validation
-    if (!sourceCode || !destinationCode) {
-        showError('search-results-container', 'Please enter both source and destination codes');
-        return;
-    }
-    
-    if (sourceCode === destinationCode) {
-        showError('search-results-container', 'Source and destination codes cannot be the same');
-        return;
-    }
-    
-    showLoading('search-results-container');
-    
-    try {
-        const url = `${API_BASE_URL}/search/by-code?sourceCode=${encodeURIComponent(sourceCode)}&destinationCode=${encodeURIComponent(destinationCode)}`;
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            if (response.status === 404) {
-                throw new Error('No trains found for the given route');
-            } else if (response.status === 400) {
-                throw new Error('Invalid station codes provided');
-            } else {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-        }
-        
-        const trains = await response.json();
-        
-        if (!Array.isArray(trains) || trains.length === 0) {
-            container.innerHTML = `
-                <div class="no-results">
-                    No trains found from ${sourceCode} to ${destinationCode}
-                    <br><small>Please check if the station codes are correct</small>
-                </div>
-            `;
-            return;
-        }
-        
-        const trainsHTML = trains.map(train => createSearchTrainCard(train)).join('');
-        container.innerHTML = `
-            <h3 style="margin-bottom: 20px; color: #333;">
-                Found ${trains.length} trains from ${getStationName(sourceCode)} (${sourceCode}) to ${getStationName(destinationCode)} (${destinationCode})
-            </h3>
-            <div class="trains-grid">${trainsHTML}</div>
-        `;
-        
-    } catch (error) {
-        console.error('Error searching trains:', error);
-        showError('search-results-container', error.message);
-    }
-}
+     try {
+         const response = await fetch(`${API_BASE_URL}/trains`);
+         
+         if (!response.ok) {
+             throw new Error(`HTTP error! status: ${response.status}`);
+         }
+         
+         const trains = await response.json();
+         displayAllTrains(trains);
+         
+     } catch (error) {
+         console.error('Get trains error:', error);
+         resultsDiv.innerHTML = `<div class="error">Error loading trains: ${error.message}</div>`;
+     }
+ }
 
-/**
- * Clear search form
- */
-function clearSearchForm() {
-    document.getElementById('sourceCode').value = '';
-    document.getElementById('destinationCode').value = '';
-    document.getElementById('search-results-container').innerHTML = '';
-}
+ // Display all trains
+ function displayAllTrains(trains) {
+     const resultsDiv = document.getElementById('trainResults');
+     
+     if (trains.length === 0) {
+         resultsDiv.innerHTML = '<div class="error">No trains found in the database.</div>';
+         return;
+     }
 
-/**
- * Initialize the application
- */
-function initializeApp() {
-    // Load all trains on page load
-    loadAllTrains();
-    
-    // Add Enter key support for search inputs
-    const sourceInput = document.getElementById('sourceCode');
-    const destinationInput = document.getElementById('destinationCode');
-    
-    if (sourceInput) {
-        sourceInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                searchTrains();
-            }
-        });
-        
-        // Convert to uppercase as user types
-        sourceInput.addEventListener('input', function(e) {
-            e.target.value = e.target.value.toUpperCase();
-        });
-    }
-    
-    if (destinationInput) {
-        destinationInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                searchTrains();
-            }
-        });
-        
-        // Convert to uppercase as user types
-        destinationInput.addEventListener('input', function(e) {
-            e.target.value = e.target.value.toUpperCase();
-        });
-    }
-    
-    // Add Enter key support for add train form
-    const trainNameInput = document.getElementById('newTrainName');
-    const trainNumberInput = document.getElementById('newTrainNumber');
-    
-    if (trainNameInput) {
-        trainNameInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addTrain();
-            }
-        });
-    }
-    
-    if (trainNumberInput) {
-        trainNumberInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addTrain();
-            }
-        });
-    }
-}
+     let html = '<h3 style="margin-bottom: 20px; color: #333;">All Trains</h3>';
+     
+     trains.forEach(train => {
+         html += `
+             <div class="train-card">
+                 <div class="train-header">
+                     <div class="train-name">${train.trainName}</div>
+                     <div class="train-number">#${train.trainNumber}</div>
+                 </div>
+             </div>
+         `;
+     });
 
-/**
- * Add station to the station names dictionary
- * @param {string} code - Station code
- * @param {string} name - Station name
- */
-function addStation(code, name) {
-    stationNames[code.toUpperCase()] = name;
-}
+     resultsDiv.innerHTML = html;
+ }
 
-/**
- * Get all available station codes
- * @returns {Array} - Array of station codes
- */
-function getAvailableStations() {
-    return Object.keys(stationNames);
-}
+ // Add train function
+ async function addTrain(event) {
+     event.preventDefault();
+     
+     const trainName = document.getElementById('trainName').value.trim();
+     const trainNumber = document.getElementById('trainNumber').value.trim();
+     const resultsDiv = document.getElementById('trainResults');
 
-/**
- * Handle API configuration updates
- * @param {string} newBaseUrl - New base URL for the API
- */
-function updateApiUrl(newBaseUrl) {
-    API_BASE_URL = newBaseUrl;
-    console.log(`API URL updated to: ${API_BASE_URL}`);
-}
+     if (!trainName || !trainNumber) {
+         resultsDiv.innerHTML = '<div class="error">Please fill in all fields.</div>';
+         return;
+     }
 
-// Initialize the app when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializeApp);
+     try {
+         const response = await fetch(`${API_BASE_URL}/trains/addtrain`, {
+             method: 'POST',
+             headers: {
+                 'Content-Type': 'application/json',
+             },
+             body: JSON.stringify({
+                 trainName: trainName,
+                 trainNumber: trainNumber,
+                 trainSchedules: null
+             })
+         });
 
-// Export functions for potential external use
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        switchTab,
-        loadAllTrains,
-        searchTrains,
-        addTrain,
-        clearSearchForm,
-        addStation,
-        getAvailableStations,
-        updateApiUrl
-    };
-}
+         if (!response.ok) {
+             throw new Error(`HTTP error! status: ${response.status}`);
+         }
+
+         const newTrain = await response.json();
+         
+         // Clear form
+         document.getElementById('trainName').value = '';
+         document.getElementById('trainNumber').value = '';
+         
+         resultsDiv.innerHTML = `
+             <div class="success">
+                 Train "${newTrain.trainName}" (#${newTrain.trainNumber}) added successfully!
+             </div>
+         `;
+
+         // Refresh the train list
+         setTimeout(() => {
+             getAllTrains();
+         }, 1000);
+
+     } catch (error) {
+         console.error('Add train error:', error);
+         resultsDiv.innerHTML = `<div class="error">Error adding train: ${error.message}</div>`;
+     }
+ }
+
+ // Initialize database function
+ async function initializeData() {
+     const resultsDiv = document.getElementById('initResults');
+     resultsDiv.innerHTML = '<div class="loading">Initializing database...</div>';
+
+     try {
+         const response = await fetch(`${API_BASE_URL}/test`);
+         
+         if (!response.ok) {
+             throw new Error(`HTTP error! status: ${response.status}`);
+         }
+
+         resultsDiv.innerHTML = `
+             <div class="success">
+                 Database initialized successfully! 
+                 <br><br>
+                 <strong>Sample data added:</strong>
+                 <ul style="margin-top: 10px; margin-left: 20px;">
+                     <li><strong>Stations:</strong> New Delhi (NDLS), Mumbai Central (CST), Kolkata (KOO), Chennai Express (MAS)</li>
+                     <li><strong>Trains:</strong> Rajdhani Express (#120665), Durantu Express (#128059), Shatabdi Express (#120541), Satara Express (#120649), Kalyan Express (#120550)</li>
+                     <li><strong>Routes:</strong> Mumbai↔Delhi, Delhi↔Chennai, Chennai↔Kolkata</li>
+                 </ul>
+                 <br>
+                 <strong>Test the search with these routes:</strong>
+                 <ul style="margin-top: 5px; margin-left: 20px;">
+                     <li>CST to NDLS (Mumbai to Delhi)</li>
+                     <li>NDLS to MAS (Delhi to Chennai)</li>
+                     <li>MAS to KOO (Chennai to Kolkata)</li>
+                 </ul>
+             </div>
+         `;
+
+     } catch (error) {
+         console.error('Initialize error:', error);
+         resultsDiv.innerHTML = `<div class="error">Error initializing database: ${error.message}</div>`;
+     }
+ }
+
+ // Enter key support for search
+ document.addEventListener('DOMContentLoaded', function() {
+     const sourceInput = document.getElementById('source');
+     const destinationInput = document.getElementById('destination');
+     
+     [sourceInput, destinationInput].forEach(input => {
+         input.addEventListener('keypress', function(event) {
+             if (event.key === 'Enter') {
+                 searchTrains();
+             }
+         });
+     });
+ });
+
+ // Sample data helper and auto-populate functionality
+ document.addEventListener('DOMContentLoaded', function() {
+     // Add some sample placeholder text to help users understand the format
+     const searchTypeSelect = document.getElementById('searchType');
+     const sourceInput = document.getElementById('source');
+     const destinationInput = document.getElementById('destination');
+
+     searchTypeSelect.addEventListener('change', function() {
+         if (this.value === 'code') {
+             sourceInput.placeholder = 'e.g., CST, NDLS, KOO, MAS';
+             destinationInput.placeholder = 'e.g., NDLS, CST, KOO, MAS';
+         } else {
+             sourceInput.placeholder = 'e.g., Mumbai Central, New Delhi';
+             destinationInput.placeholder = 'e.g., New Delhi, Chennai Express';
+         }
+     });
+
+     // Add quick search buttons for common routes
+     addQuickSearchButtons();
+ });
+
+ // Add quick search buttons for testing
+ function addQuickSearchButtons() {
+     const searchCard = document.querySelector('#search .card');
+     const quickSearchDiv = document.createElement('div');
+     quickSearchDiv.innerHTML = `
+         <h4 style="margin: 20px 0 10px 0; color: #333;">Quick Search (Test Routes):</h4>
+         <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+             <button class="btn" style="font-size: 14px; padding: 8px 15px;" onclick="fillQuickSearch('CST', 'NDLS', 'code')">Mumbai → Delhi</button>
+             <button class="btn" style="font-size: 14px; padding: 8px 15px;" onclick="fillQuickSearch('NDLS', 'MAS', 'code')">Delhi → Chennai</button>
+             <button class="btn" style="font-size: 14px; padding: 8px 15px;" onclick="fillQuickSearch('MAS', 'KOO', 'code')">Chennai → Kolkata</button>
+             <button class="btn btn-secondary" style="font-size: 14px; padding: 8px 15px;" onclick="fillQuickSearch('Mumbai Central', 'New Delhi', 'name')">By Name</button>
+         </div>
+     `;
+     
+     const searchRow = searchCard.querySelector('.search-row');
+     searchRow.parentNode.insertBefore(quickSearchDiv, searchRow);
+ }
+
+ // Fill quick search data
+ function fillQuickSearch(source, destination, searchType) {
+     document.getElementById('searchType').value = searchType;
+     document.getElementById('source').value = source;
+     document.getElementById('destination').value = destination;
+     
+     // Trigger placeholder update
+     const event = new Event('change');
+     document.getElementById('searchType').dispatchEvent(event);
+ }
