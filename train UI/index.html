@@ -3,66 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Train Management System</title>
+    <title>RailEase</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚂 Train Management System</h1>
-            <p>Find and manage train schedules with ease</p>
-            <!-- Add Train Tab -->
-        <div id="add-train" class="tab-content">
-            <div class="search-form">
-                <h3 style="margin-bottom: 20px; font-size: 1.5rem;">➕ Add New Train</h3>
+  <div class="container">
+    <div class="header">
+        <h1>🚂 Train Booking System</h1>
+        <p>Search and manage train schedules with ease</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('search')">Search Trains</button>
+        <button class="tab" onclick="showTab('manage')">Manage Trains</button>
+        <button class="tab" onclick="showTab('initialize')">Initialize Data</button>
+    </div>
+
+    <!-- Search Trains Tab -->
+    <div id="search" class="tab-content active">
+        <div class="card">
+            <h2>Search Trains</h2>
+            
+            <div class="form-group">
+                <label for="searchType">Search By:</label>
+                <select id="searchType">
+                    <option value="code">Station Code</option>
+                    <option value="name">Station Name</option>
+                </select>
+            </div>
+
+            <div class="search-row">
                 <div class="form-group">
-                    <div class="input-group">
-                        <label for="newTrainName">Train Name</label>
-                        <input type="text" id="newTrainName" placeholder="e.g., Satara Express">
-                    </div>
-                    <div class="input-group">
-                        <label for="newTrainNumber">Train Number</label>
-                        <input type="text" id="newTrainNumber" placeholder="e.g., 155250">
-                    </div>
-                    <button class="search-btn" onclick="addTrain()">🚂 Add Train</button>
+                    <label for="source">From (Source)</label>
+                    <input type="text" id="source" placeholder="Enter source station">
+                </div>
+                <div class="form-group">
+                    <label for="destination">To (Destination)</label>
+                    <input type="text" id="destination" placeholder="Enter destination station">
+                </div>
+                <div class="form-group">
+                    <button class="btn" onclick="searchTrains()">🔍 Search</button>
                 </div>
             </div>
-            <div id="add-train-message"></div>
+
+            <div id="searchResults" class="results-container"></div>
         </div>
     </div>
 
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="switchTab('all-trains')">All Trains</button>
-            <button class="nav-tab" onclick="switchTab('search-trains')">Search Trains</button>
-            <button class="nav-tab" onclick="switchTab('add-train')">Add Train</button>
-        </div>
-
-        <!-- All Trains Tab -->
-        <div id="all-trains" class="tab-content active">
-            <button class="refresh-btn" onclick="loadAllTrains()">🔄 Refresh Trains</button>
-            <div id="all-trains-container"></div>
-        </div>
-
-        <!-- Search Trains Tab -->
-        <div id="search-trains" class="tab-content">
-            <div class="search-form">
-                <h3 style="margin-bottom: 20px; font-size: 1.5rem;">🔍 Search Trains</h3>
-                <div class="form-group">
-                    <div class="input-group">
-                        <label for="sourceCode">From Station Code</label>
-                        <input type="text" id="sourceCode" placeholder="e.g., NDLS" value="NDLS">
+    <!-- Manage Trains Tab -->
+    <div id="manage" class="tab-content">
+        <div class="card">
+            <h2>Manage Trains</h2>
+            
+            <button class="btn btn-secondary" onclick="getAllTrains()">📋 View All Trains</button>
+            
+            <div style="margin-top: 30px;">
+                <h3 style="margin-bottom: 20px; color: #333;">Add New Train</h3>
+                <form class="add-train-form" onsubmit="addTrain(event)">
+                    <div class="form-group">
+                        <label for="trainName">Train Name</label>
+                        <input type="text" id="trainName" required placeholder="e.g., Express Train">
                     </div>
-                    <div class="input-group">
-                        <label for="destinationCode">To Station Code</label>
-                        <input type="text" id="destinationCode" placeholder="e.g., CST" value="CST">
+                    <div class="form-group">
+                        <label for="trainNumber">Train Number</label>
+                        <input type="text" id="trainNumber" required placeholder="e.g., 12345">
                     </div>
-                    <button class="search-btn" onclick="searchTrains()">🚀 Search Trains</button>
-                </div>
+                    <div class="form-group form-full-width">
+                        <button type="submit" class="btn btn-success">➕ Add Train</button>
+                    </div>
+                </form>
             </div>
-            <div id="search-results-container"></div>
+
+            <div id="trainResults" class="results-container"></div>
         </div>
     </div>
 
+    <!-- Initialize Data Tab -->
+    <div id="initialize" class="tab-content">
+        <div class="card">
+            <h2>Database Operations</h2>
+            <p style="margin-bottom: 20px; color: #666;">Initialize the database with sample stations, trains, and schedules.</p>
+            
+            <button class="btn btn-success" onclick="initializeData()">🚀 Initialize Database</button>
+            
+            <div id="initResults" class="results-container"></div>
+        </div>
+    </div>
+</div>
     <script src="script.js"></script>
 </body>
 </html>
